@@ -24,7 +24,7 @@
 // brain-hibernation line (6-7/10). The obvious anchors — "sleep now
 // optional", "removed the need for sleep", "humans needed sleep" — are
 // blocked below so the entry can never drift into a cliché.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const LINE =
@@ -62,7 +62,17 @@ function main(): void {
 
   const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, "entry.txt"), LINE, "utf8");
+  const outPath = join(outDir, "entry.txt");
+  writeFileSync(outPath, LINE, "utf8");
+  // Round-trip verification: read entry.txt back and confirm it is
+  // byte-exact against LINE — same length, same content, no trailing
+  // newline or encoding drift added by the write.
+  const written = readFileSync(outPath, "utf8");
+  if (written.length !== LINE.length || written !== LINE) {
+    throw new Error(
+      `entry.txt round-trip mismatch: wrote ${LINE.length} chars, read back ${written.length} chars`
+    );
+  }
 }
 
 main();
